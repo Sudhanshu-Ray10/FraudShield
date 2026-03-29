@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, RefreshCw, Hand, ShieldAlert, CreditCard, Crosshair } from "lucide-react";
-import { TransactionScenario, DeviceType, TimeOfDay } from "@/lib/types";
+import { Copy, RefreshCw, Hand, ShieldAlert, CreditCard, Crosshair, Settings2, Target } from "lucide-react";
+import { TransactionScenario, DeviceType, TimeOfDay, GameMode, PolicySettings } from "@/lib/types";
 import { LOCATIONS, SCENARIO_PRESETS, MOCK_RECEIVERS, MOCK_USERS } from "@/lib/mockData";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -16,9 +16,12 @@ interface LeftPanelProps {
   setScenario: (updates: Partial<TransactionScenario>) => void;
   onSimulate: () => void;
   isSimulating: boolean;
+  gameMode: GameMode;
+  policy: PolicySettings;
+  setPolicy: React.Dispatch<React.SetStateAction<PolicySettings>>;
 }
 
-export function LeftPanel({ scenario, setScenario, onSimulate, isSimulating }: LeftPanelProps) {
+export function LeftPanel({ scenario, setScenario, onSimulate, isSimulating, gameMode, policy, setPolicy }: LeftPanelProps) {
   const [txnId, setTxnId] = useState("TXN-10293");
 
   useEffect(() => {
@@ -38,10 +41,55 @@ export function LeftPanel({ scenario, setScenario, onSimulate, isSimulating }: L
     <div className="flex flex-col gap-6 h-full p-6 glass-card rounded-2xl overflow-y-auto">
       <div>
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          Scenario Config
+          {gameMode === "ATTACKER" ? "Attack Configuration" : "Scenario Config"}
         </h2>
-        <p className="text-sm text-zinc-400 mt-1">Configure transaction details or select a preset to simulate AI fraud detection.</p>
+        <p className="text-sm text-zinc-400 mt-1">Configure transaction details to simulate AI fraud detection.</p>
       </div>
+
+      {gameMode === "ATTACKER" && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex gap-3 text-red-400">
+           <Target className="w-5 h-5 shrink-0" />
+           <p className="text-sm font-medium leading-snug text-red-200">
+             <span className="text-red-400 font-bold block mb-1">OBJECTIVE: Bypass The Filter</span>
+             Construct a transaction signature that slips past the AI filters. Goal: Achieve a "SAFE" status.
+           </p>
+        </div>
+      )}
+
+      {/* AI Policies Slider */}
+      {gameMode === "SIMULATOR" && (
+        <div className="flex flex-col gap-3">
+          <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-2">
+            <Settings2 className="w-4 h-4" /> AI Engine Model
+          </h3>
+          <select
+            value={scenario.aiModel}
+            onChange={(e) => setScenario({ aiModel: e.target.value as any })}
+            className="bg-zinc-900 border border-border rounded-xl px-4 py-3 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+          >
+            <option value="Strict Ruleset">Strict Ruleset (Rule-based)</option>
+            <option value="Fast Heuristics">Fast Heuristics (Weighted)</option>
+            <option value="Deep Neural Network">Deep Neural Network (DNN)</option>
+          </select>
+          
+          <h3 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-2 mt-2">
+            <Settings2 className="w-4 h-4" /> Policy Strictness
+          </h3>
+          <div className="bg-zinc-900 border border-border p-3 rounded-xl flex flex-col gap-2">
+             <div className="flex justify-between text-xs text-zinc-400">
+                <span>Lenient</span>
+                <span className="font-mono text-primary">{policy.strictness}%</span>
+                <span>Max Security</span>
+             </div>
+             <input 
+               type="range" min="0" max="100" 
+               value={policy.strictness} 
+               onChange={(e) => setPolicy(prev => ({ ...prev, strictness: Number(e.target.value) }))}
+               className="w-full accent-primary bg-zinc-700 rounded-lg appearance-none h-1.5 focus:outline-none"
+             />
+          </div>
+        </div>
+      )}
 
       {/* Preset Selectors */}
       <div className="flex flex-col gap-3">
@@ -85,26 +133,34 @@ export function LeftPanel({ scenario, setScenario, onSimulate, isSimulating }: L
         </div>
 
         <div className="grid grid-cols-1 gap-4">
-          <label className="flex flex-col gap-1.5">
+          <label className="flex flex-col gap-1.5 relative">
             <span className="text-xs font-medium text-zinc-400">Sender</span>
-            <select
+            <input
+              type="text"
+              list="senders-list"
               value={scenario.sender}
               onChange={(e) => setScenario({ sender: e.target.value })}
-              className="bg-zinc-900 border border-border rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-            >
-              {MOCK_USERS.map((u) => <option key={u} value={u}>{u}</option>)}
-            </select>
+              placeholder="Enter custom name..."
+              className="bg-zinc-900 border border-border rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none placeholder:text-zinc-600"
+            />
+            <datalist id="senders-list">
+              {MOCK_USERS.map((u) => <option key={u} value={u} />)}
+            </datalist>
           </label>
 
-          <label className="flex flex-col gap-1.5">
+          <label className="flex flex-col gap-1.5 relative">
             <span className="text-xs font-medium text-zinc-400">Receiver</span>
-            <select
+            <input
+              type="text"
+              list="receivers-list"
               value={scenario.receiver}
               onChange={(e) => setScenario({ receiver: e.target.value })}
-              className="bg-zinc-900 border border-border rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-            >
-              {MOCK_RECEIVERS.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
+              placeholder="Enter custom name..."
+              className="bg-zinc-900 border border-border rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none placeholder:text-zinc-600"
+            />
+            <datalist id="receivers-list">
+              {MOCK_RECEIVERS.map((r) => <option key={r} value={r} />)}
+            </datalist>
           </label>
 
           <label className="flex flex-col gap-1.5">
