@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-zinc-100 antialiased font-sans selection:bg-primary/30 selection:text-white;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-card/60 backdrop-blur-md border border-border/50 shadow-xl;
+  }
+  .glow-effect {
+    @apply relative before:absolute before:inset-0 before:bg-primary/20 before:blur-2xl before:-z-10;
+  }
+}
