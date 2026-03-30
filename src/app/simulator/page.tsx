@@ -248,7 +248,7 @@ export default function Home() {
       <main className="flex-1 w-full max-w-[1800px] mx-auto grid grid-cols-1 lg:grid-cols-12 items-start gap-4 md:gap-6 p-4 pt-24 md:pt-28 lg:h-[calc(100vh-120px)] overflow-y-auto lg:overflow-hidden pb-20 lg:pb-6">
 
         {/* Left Panel: Scenario Editor (3 columns) */}
-        <section className="col-span-1 lg:col-span-3 h-fit lg:h-full">
+        <section className="col-span-1 lg:col-span-3 h-fit">
           <LeftPanel
             scenario={scenario}
             setScenario={updateScenario}
@@ -262,7 +262,7 @@ export default function Home() {
         </section>
 
         {/* Center Panel: Simulation Engine (6 columns) */}
-        <section className="col-span-1 lg:col-span-6 relative z-10 h-fit lg:h-full">
+        <section className="col-span-1 lg:col-span-6 relative z-10 h-fit lg:min-h-[780px]">
           <CenterPanel
             isSimulating={isSimulating}
             scenario={scenario}

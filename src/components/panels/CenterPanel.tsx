@@ -34,7 +34,7 @@ export function CenterPanel({ isSimulating, scenario, result, gameMode }: Center
       }}
       transition={{ duration: 0.4 }}
       className={clsx(
-        "flex flex-col h-full bg-card rounded-2xl border overflow-y-auto relative p-6 w-full max-w-2xl xl:max-w-4xl mx-auto shadow-2xl transition-colors", 
+        "flex flex-col h-full lg:min-h-[1020px] bg-card rounded-2xl border overflow-y-auto relative p-6 w-full max-w-2xl xl:max-w-4xl mx-auto shadow-2xl transition-colors",
         isFraud ? "border-status-fraud/50 bg-status-fraud/5" : "border-border"
       )}
     >

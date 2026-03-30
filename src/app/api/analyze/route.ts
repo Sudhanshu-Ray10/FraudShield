@@ -51,10 +51,16 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ story: storyLines.slice(0, 5) });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("LLM Generation Error:", error);
+    // Determine if it's a safety filter error or something else
+    const errorMsg = error.message || "Unknown error";
     return NextResponse.json({ 
-      story: ["[SYSTEM ERROR] External neural link severed.", "Falling back to local heuristic routing..."] 
+      story: [
+        "[SYSTEM ERROR] External neural link severed.", 
+        `Error Detail: ${errorMsg.slice(0, 50)}${errorMsg.length > 50 ? '...' : ''}`,
+        "Falling back to local heuristic routing..."
+      ] 
     });
   }
 }
