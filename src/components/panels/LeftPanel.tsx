@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, RefreshCw, Hand, ShieldAlert, CreditCard, Crosshair, Settings2, Target } from "lucide-react";
+import { Copy, RefreshCw, Hand, ShieldAlert, CreditCard, Crosshair, Settings2, Target, Zap } from "lucide-react";
 import { TransactionScenario, DeviceType, TimeOfDay, GameMode, PolicySettings } from "@/lib/types";
 import { LOCATIONS, SCENARIO_PRESETS, MOCK_RECEIVERS, MOCK_USERS } from "@/lib/mockData";
 import { clsx, type ClassValue } from "clsx";
@@ -19,9 +19,10 @@ interface LeftPanelProps {
   gameMode: GameMode;
   policy: PolicySettings;
   setPolicy: React.Dispatch<React.SetStateAction<PolicySettings>>;
+  onPlaybook: () => void;
 }
 
-export function LeftPanel({ scenario, setScenario, onSimulate, isSimulating, gameMode, policy, setPolicy }: LeftPanelProps) {
+export function LeftPanel({ scenario, setScenario, onSimulate, isSimulating, gameMode, policy, setPolicy, onPlaybook }: LeftPanelProps) {
   const [txnId, setTxnId] = useState("TXN-10293");
 
   useEffect(() => {
@@ -214,7 +215,18 @@ export function LeftPanel({ scenario, setScenario, onSimulate, isSimulating, gam
         </div>
       </div>
 
-      <div className="mt-auto pt-6">
+      <div className="mt-auto pt-6 flex flex-col gap-3">
+        {gameMode === "ATTACKER" && (
+          <button
+            onClick={onPlaybook}
+            disabled={isSimulating}
+            className="w-full relative group overflow-hidden rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-red-400 font-semibold tracking-wide transition-all hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+           <Zap className="w-4 h-4" />
+           Run Auto-Exploit Script
+          </button>
+        )}
+
         <button
           onClick={onSimulate}
           disabled={isSimulating}

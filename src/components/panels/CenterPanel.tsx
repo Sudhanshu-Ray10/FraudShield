@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TransactionScenario, SimulationResult, GameMode } from "@/lib/types";
-import { BrainCircuit, ShieldAlert, ShieldCheck, CheckCircle2, AlertTriangle, AlertOctagon, Zap, Terminal, MapPin, Network, Radar as RadarIcon, ScrollText } from "lucide-react";
+import { BrainCircuit, ShieldAlert, ShieldCheck, CheckCircle2, AlertTriangle, AlertOctagon, Zap, Terminal, MapPin, Network, Radar as RadarIcon, ScrollText, Smartphone } from "lucide-react";
 import { clsx } from "clsx";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 
@@ -19,6 +19,11 @@ type TabKey = "overview" | "radar" | "geo" | "graph";
 export function CenterPanel({ isSimulating, scenario, result, gameMode }: CenterPanelProps) {
   const isFraud = result?.level === "FRAUD";
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const [otpBypassed, setOtpBypassed] = useState(false);
+
+  useEffect(() => {
+    if (isSimulating) setOtpBypassed(false);
+  }, [isSimulating]);
   
   return (
     <motion.div 
@@ -153,6 +158,45 @@ export function CenterPanel({ isSimulating, scenario, result, gameMode }: Center
           </div>
 
           <TerminalFeed isSimulating={isSimulating} scenario={scenario} />
+
+          {/* OTP Modal Overlay for Phase 2 */}
+          <AnimatePresence>
+            {!isSimulating && result?.decision === "REQUIRE OTP" && !otpBypassed && (
+              <motion.div 
+                initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+                animate={{ opacity: 1, backdropFilter: "blur(10px)" }}
+                exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+                className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 rounded-2xl"
+              >
+                <div className="bg-zinc-950 border border-status-warning/50 rounded-2xl p-6 w-[320px] md:w-[380px] shadow-2xl flex flex-col items-center text-center relative overflow-hidden">
+                  <div className="absolute top-0 inset-x-0 h-1 bg-status-warning" />
+                  <Smartphone className="w-10 h-10 text-status-warning mb-4 animate-[bounce_2s_infinite]" />
+                  <h3 className="text-xl font-bold text-white mb-2">2FA Required</h3>
+                  <p className="text-xs text-zinc-400 mb-6">A verification code has been sent to the registered mobile device.</p>
+                  
+                  <div className="flex gap-2 mb-6">
+                    {[1, 2, 3, 4, 5, 6].map(i => (
+                       <div key={i} className="w-10 h-12 bg-zinc-900 border border-zinc-700 rounded-lg text-xl flex items-center justify-center font-bold text-zinc-600 shadow-inner">—</div>
+                    ))}
+                  </div>
+
+                  {gameMode === "ATTACKER" ? (
+                    <button 
+                      onClick={() => setOtpBypassed(true)}
+                      className="w-full py-2.5 bg-red-500/10 text-red-500 border border-red-500/50 rounded-lg text-sm font-bold uppercase tracking-wider hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2 group"
+                    >
+                      <Zap className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                      Simulate SS7 Intercept
+                    </button>
+                  ) : (
+                    <button disabled className="w-full py-2.5 bg-zinc-800 text-zinc-500 rounded-lg text-sm font-bold uppercase tracking-wider cursor-not-allowed border border-zinc-700/50">
+                      Waiting for user...
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
         </div>
       )}

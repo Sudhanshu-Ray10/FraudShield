@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { MOCK_PROFILES, MOCK_RECENT_TRANSACTIONS } from "@/lib/mockData";
-import { User, Activity, ShieldCheck, MapPin, Smartphone, CheckCircle, AlertTriangle, XCircle, Radar } from "lucide-react";
+import { User, Activity, ShieldCheck, MapPin, Smartphone, CheckCircle, AlertTriangle, XCircle, Radar, Download } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -14,8 +14,10 @@ interface RightPanelProps {
 }
 
 export function RightPanel({ sender, sessionTxns = [] }: RightPanelProps) {
+  const isCompromised = ["john doe", "attacker", "hacker", "scammer"].includes(sender.toLowerCase().trim());
+
   const profile = useMemo(() => {
-    if (MOCK_PROFILES[sender]) return MOCK_PROFILES[sender];
+    if (MOCK_PROFILES[sender] && !isCompromised) return MOCK_PROFILES[sender];
     if (!sender.trim()) return MOCK_PROFILES["Alice Smith"]; // Base fallback for totally empty input
 
     // Generate a highly consistent pseudo-random profile for ANY custom name
@@ -35,14 +37,35 @@ export function RightPanel({ sender, sessionTxns = [] }: RightPanelProps) {
     
     return {
       name: sender,
-      trustScore: 40 + (hash % 60), // Between 40 and 99
+      trustScore: isCompromised ? 12 + (hash % 10) : 40 + (hash % 60), 
       avgAmount: 100 + (hash % 5000), // Between 100 and 5100
       usualLocation: bestLoc,
       trustedDevices: ["Unknown Device Fingerprint"],
     };
-  }, [sender, sessionTxns]);
+  }, [sender, sessionTxns, isCompromised]);
 
   const transactions = [...sessionTxns, ...(MOCK_RECENT_TRANSACTIONS[sender] || [])];
+  
+  const exportToCSV = () => {
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Transaction ID,Amount,Location,AI Decision,Date\n";
+    transactions.forEach(row => {
+      csvContent += `${row.id},$${row.amount},${row.location},${row.status},${row.date.replace(/,/g, "")}\n`;
+    });
+    
+    csvContent += `\nProfile Investigation Target\n`;
+    csvContent += `Name,${profile.name}\n`;
+    csvContent += `Trust Score,${profile.trustScore}\n`;
+    csvContent += `Avg Spend,$${profile.avgAmount}\n`;
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `fraud_audit_${sender.replace(/\s+/g, "_")}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   
   return (
     <div className="flex flex-col gap-6 h-full p-6 glass-card rounded-2xl overflow-y-auto">
@@ -59,9 +82,15 @@ export function RightPanel({ sender, sessionTxns = [] }: RightPanelProps) {
         <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className="text-lg font-semibold text-white">{profile.name}</h3>
-            <p className="text-xs text-zinc-400 flex items-center gap-1 mt-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-status-safe" /> Verified User
-            </p>
+            {isCompromised ? (
+              <p className="text-[11px] font-bold text-red-500 flex items-center gap-1 mt-1.5 bg-red-500/10 px-2 py-1 rounded w-fit border border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                <AlertTriangle className="w-3.5 h-3.5" /> Dark Web Leak Detected
+              </p>
+            ) : (
+              <p className="text-xs text-zinc-400 flex items-center gap-1 mt-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-status-safe" /> Verified User
+              </p>
+            )}
           </div>
           <div className="flex flex-col items-end">
             <span className={cn(
@@ -133,6 +162,16 @@ export function RightPanel({ sender, sessionTxns = [] }: RightPanelProps) {
           })}
           {transactions.length === 0 && (
              <p className="text-zinc-500 text-xs italic text-center py-4">No recent history available.</p>
+          )}
+
+          {transactions.length > 0 && (
+            <button 
+              onClick={exportToCSV}
+              className="w-full mt-2 py-2.5 bg-zinc-900 border border-border rounded-lg text-xs font-semibold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 group"
+            >
+              <Download className="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" />
+              Export Audit Log (.CSV)
+            </button>
           )}
         </div>
       </div>

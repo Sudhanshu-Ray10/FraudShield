@@ -1,0 +1,331 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Navbar } from "@/components/layout/Navbar";
+import { LeftPanel } from "@/components/panels/LeftPanel";
+import { CenterPanel } from "@/components/panels/CenterPanel";
+import { RightPanel } from "@/components/panels/RightPanel";
+import { TransactionScenario, SimulationResult, GameMode, PolicySettings } from "@/lib/types";
+import { ShieldCheck, Activity, X } from "lucide-react";
+import { soundEngine } from "@/lib/audio";
+
+export default function Home() {
+  const [gameMode, setGameMode] = useState<GameMode>("SIMULATOR");
+  const [policy, setPolicy] = useState<PolicySettings>({ strictness: 50, blockThreshold: 75, otpThreshold: 40 });
+  const [bounty, setBounty] = useState<number>(0);
+  const [showHeistVictory, setShowHeistVictory] = useState(false);
+  const [hasSeenVictory, setHasSeenVictory] = useState(false);
+
+  const [scenario, setScenario] = useState<TransactionScenario>({
+    id: "TXN-10293",
+    sender: "Alice Smith",
+    receiver: "Amazon Store",
+    amount: 1540,
+    location: "Pune",
+    device: "Desktop",
+    time: "Day",
+    preset: "Normal Behavior",
+    aiModel: "Fast Heuristics",
+  });
+
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [result, setResult] = useState<SimulationResult | null>(null);
+
+  const [sessionTxns, setSessionTxns] = useState<Record<string, Array<{ id: string, amount: number, location: string, status: string, date: string }>>>({});
+
+  const updateScenario = (updates: Partial<TransactionScenario>) => {
+    setScenario((prev) => ({ ...prev, ...updates }));
+  };
+
+  const handleSimulate = async () => {
+    soundEngine.init();
+    soundEngine.playSimulateStart();
+    setIsSimulating(true);
+    setResult(null);
+
+    // Apply Policy strictness multiplier
+    const strictnessMultiplier = 0.5 + (policy.strictness / 100);
+
+    let baseScore = 10;
+    let contributions = { behavior: 5, location: 2, device: 3 };
+    let aiStory: string[] = [];
+
+    // Dark Web API Simulation
+    const COMPROMISED_NAMES = ["john doe", "attacker", "hacker", "scammer"];
+    if (COMPROMISED_NAMES.includes(scenario.sender.toLowerCase().trim())) {
+      baseScore += 25 * strictnessMultiplier;
+      contributions.behavior += Math.floor(15 * strictnessMultiplier);
+      aiStory.push(`[CRITICAL] Sender identity flagged in recent Dark Web credential leak.`);
+    }
+
+    if (scenario.amount > 10000) {
+      baseScore += 35 * strictnessMultiplier;
+      contributions.behavior += Math.floor(25 * strictnessMultiplier);
+      aiStory.push(`Transaction amount ($${scenario.amount}) is significantly higher than user's average.`);
+    } else {
+      aiStory.push(`Transaction amount is within normal spending behavioral limits.`);
+    }
+
+    if (scenario.location !== "Pune") {
+      baseScore += 25 * strictnessMultiplier;
+      contributions.location += Math.floor(22 * strictnessMultiplier);
+      aiStory.push(`User typically transacts from Pune, but current location is ${scenario.location}.`);
+    }
+
+    if (scenario.device !== "Desktop" && scenario.preset.includes("Stolen")) {
+      baseScore += 20 * strictnessMultiplier;
+      contributions.device += Math.floor(18 * strictnessMultiplier);
+      aiStory.push(`Unrecognized device signature detected during checkout.`);
+    }
+
+    if (scenario.time === "Night" && baseScore > 30) {
+      baseScore += 15 * strictnessMultiplier;
+      contributions.behavior += Math.floor(10 * strictnessMultiplier);
+      aiStory.push(`Unusual transaction timing correlating with high-risk pattern.`);
+    }
+
+    // AI Model overrides
+    if (scenario.aiModel === "Strict Ruleset") {
+      aiStory.push(`Strict Ruleset: Hard constraints applied.`);
+      if (scenario.amount > 5000) baseScore += 20;
+    } else if (scenario.aiModel === "Deep Neural Network") {
+      aiStory.push(`Deep Learning: Complex pattern analysis engaged.`);
+      if (scenario.preset.includes("Takeover")) baseScore += 30; // DNN catches subtle ATOs better
+      if (scenario.preset === "Normal Behavior") baseScore -= 10; // DNN has fewer false positives
+    } else {
+      aiStory.push(`Fast Heuristics: Standard weighted logic applied.`);
+    }
+
+    // Cap score at 98
+    const score = Math.floor(Math.min(baseScore, 98));
+
+    let decision: SimulationResult["decision"] = "ALLOW";
+    let level: SimulationResult["level"] = "SAFE";
+
+    // DETERMINE OUTCOME BEFORE API CALL
+    if (score >= policy.blockThreshold) {
+      decision = "BLOCK TRANSACTION";
+      level = "FRAUD";
+    } else if (score >= policy.otpThreshold) {
+      decision = "REQUIRE OTP";
+      level = "WARNING";
+    }
+
+    // Run the network delay and API fetch concurrently!
+    const waitPromise = new Promise(res => setTimeout(res, 1800));
+    const fetchPromise = fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario, decision, score })
+    }).then(async r => {
+      if (r.ok) {
+        const data = await r.json();
+        if (data.story && data.story.length > 0) aiStory = data.story;
+      }
+    }).catch(e => console.error("LLM Error:", e));
+
+    await Promise.all([waitPromise, fetchPromise]);
+
+    if (decision === "BLOCK TRANSACTION") {
+      soundEngine.playBlock();
+    } else if (decision === "REQUIRE OTP") {
+      soundEngine.playWarning();
+    } else {
+      soundEngine.playSafe();
+    }
+
+    if (gameMode === "ATTACKER" && decision === "ALLOW") {
+      setBounty(prev => prev + scenario.amount);
+    }
+
+    const radarData = [
+      { subject: "Location", A: Math.min(contributions.location * 3, 100), fullMark: 100 },
+      { subject: "Velocity", A: scenario.amount > 5000 ? 80 : 20, fullMark: 100 },
+      { subject: "Device", A: Math.min(contributions.device * 4, 100), fullMark: 100 },
+      { subject: "Behavior", A: Math.min(contributions.behavior * 2, 100), fullMark: 100 },
+      { subject: "Network", A: scenario.aiModel === "Deep Neural Network" ? 60 : 30, fullMark: 100 },
+    ];
+
+    setResult({
+      score,
+      level,
+      decision,
+      contributions,
+      story: aiStory,
+      radarData,
+      stepsCompleted: true,
+    });
+
+    // Save transaction to the current session memory
+    setSessionTxns(prev => ({
+      ...prev,
+      [scenario.sender]: [
+        {
+          id: scenario.id,
+          amount: scenario.amount,
+          location: scenario.location,
+          status: level,
+          date: "Just Now",
+        },
+        ...(prev[scenario.sender] || [])
+      ]
+    }));
+
+    setIsSimulating(false);
+  };
+
+  const handlePlaybook = () => {
+    soundEngine.init();
+    soundEngine.playSimulateStart();
+    setIsSimulating(true);
+    setResult(null);
+
+    setTimeout(() => {
+      const scriptTxns = [
+        { id: `TXN-${Math.floor(Math.random() * 9000) + 1000}`, amount: 5, location: scenario.location, status: "SAFE", date: "Just Now" },
+        { id: `TXN-${Math.floor(Math.random() * 9000) + 1000}`, amount: 50, location: scenario.location, status: "SAFE", date: "Just Now" },
+        { id: `TXN-${Math.floor(Math.random() * 9000) + 1000}`, amount: 500, location: scenario.location, status: "WARNING", date: "Just Now" },
+        { id: `TXN-${Math.floor(Math.random() * 9000) + 1000}`, amount: 5000, location: scenario.location, status: "FRAUD", date: "Just Now" },
+      ];
+
+      setSessionTxns(prev => ({
+        ...prev,
+        [scenario.sender]: [...scriptTxns.reverse(), ...(prev[scenario.sender] || [])]
+      }));
+
+      soundEngine.playBlock();
+
+      const aiStory = [
+        "[CRITICAL] Automated Attack Script Detected (Velocity Spike).",
+        `4 structurally identical transactions fired within 1800ms window.`,
+        `Pattern heavily matches 'Slow-and-Low' credential limit escalation.`,
+        `Engine instantly elevated dynamic block threshold from ${policy.blockThreshold} to 99.`,
+        `Attack successfully contained. Final payload BLOCKED.`
+      ];
+
+      setResult({
+        score: 98,
+        level: "FRAUD",
+        decision: "BLOCK TRANSACTION",
+        contributions: { behavior: 45, location: 30, device: 25 },
+        story: aiStory,
+        radarData: [
+          { subject: "Location", A: 100, fullMark: 100 },
+          { subject: "Velocity", A: 100, fullMark: 100 },
+          { subject: "Device", A: 100, fullMark: 100 },
+          { subject: "Behavior", A: 100, fullMark: 100 },
+          { subject: "Network", A: 100, fullMark: 100 },
+        ],
+        stepsCompleted: true,
+      });
+
+      setIsSimulating(false);
+    }, 2800);
+  };
+
+  const [tickerLogs, setTickerLogs] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Generate random logs solely on client to avoid hydration mismatch
+    const logs = [...Array(20)].map(() =>
+      `[${Math.floor(Math.random() * 90) + 10}:${Math.floor(Math.random() * 50) + 10}] TXN-${Math.floor(Math.random() * 9000) + 1000} ${['Verified', 'Safe', 'Authorized'][Math.floor(Math.random() * 3)]}`
+    );
+    setTickerLogs(logs);
+  }, []);
+
+  useEffect(() => {
+    if (bounty >= 50000 && gameMode === "ATTACKER" && !hasSeenVictory) {
+      setShowHeistVictory(true);
+      setHasSeenVictory(true);
+    }
+  }, [bounty, gameMode, hasSeenVictory]);
+
+  return (
+    <div className={`flex flex-col min-h-screen ${gameMode === "ATTACKER" ? "bg-red-950/10" : "bg-background"} transition-colors duration-1000 overflow-x-hidden relative`}>
+      <Navbar gameMode={gameMode} setGameMode={setGameMode} bounty={bounty} />
+
+      {/* 3-Panel Main Layout */}
+      <main className="flex-1 w-full max-w-[1800px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 pt-20 md:p-6 md:pt-24 lg:h-[calc(100vh-130px)]">
+
+        {/* Left Panel: Scenario Editor (3 columns) */}
+        <section className="col-span-1 md:col-span-2 lg:col-span-3 lg:h-[100%] max-h-full">
+          <LeftPanel
+            scenario={scenario}
+            setScenario={updateScenario}
+            onSimulate={handleSimulate}
+            isSimulating={isSimulating}
+            gameMode={gameMode}
+            policy={policy}
+            setPolicy={setPolicy}
+            onPlaybook={handlePlaybook}
+          />
+        </section>
+
+        {/* Center Panel: Simulation Engine (6 columns) */}
+        <section className="col-span-1 md:col-span-4 lg:col-span-6 relative z-10 lg:h-[100%] max-h-full">
+          <CenterPanel
+            isSimulating={isSimulating}
+            scenario={scenario}
+            result={result}
+            gameMode={gameMode}
+          />
+        </section>
+
+        {/* Right Panel: Context Details (3 columns) */}
+        <section className="col-span-1 md:col-span-2 lg:col-span-3 lg:h-[100%] max-h-full">
+          <RightPanel sender={scenario.sender} sessionTxns={sessionTxns[scenario.sender] || []} />
+        </section>
+
+      </main>
+
+      {/* Live Background Ticker */}
+      <div className="h-10 border-t border-border bg-black/60 backdrop-blur-md flex items-center overflow-hidden whitespace-nowrap px-4 w-full z-50">
+        <div className="flex items-center gap-2 text-zinc-500 text-xs font-mono uppercase shrink-0 mr-8">
+          <Activity className="w-3.5 h-3.5 text-primary animate-pulse" /> Live Global Traffic
+        </div>
+        <div className="flex animate-[ticker_30s_linear_infinite]">
+          {tickerLogs.map((log, i) => (
+            <span key={i} className="mx-6 text-xs text-zinc-600 font-mono">
+              {log}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Heist Virality Modal */}
+      {showHeistVictory && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
+          <div className="bg-zinc-950 border border-primary/50 shadow-[0_0_50px_-10px_rgba(245,158,11,0.5)] rounded-2xl max-w-lg w-full p-8 relative flex flex-col items-center text-center">
+            
+            <button 
+              onClick={() => setShowHeistVictory(false)} 
+              className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+              <ShieldCheck className="w-8 h-8 text-primary" />
+            </div>
+            <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tight">System Breached.</h2>
+            <p className="text-zinc-400 text-sm mb-8 leading-relaxed">
+              You successfully extracted over <strong className="text-white">${bounty.toLocaleString()}</strong> from the neural network by manipulating behavioral heuristics and geospatial anomalies.
+            </p>
+            <button
+              onClick={() => {
+                const text = encodeURIComponent(`I just cracked the FraudShield AI Neural Network and extracted $${bounty.toLocaleString()} using behavioral geospatial manipulation. Can you beat my high score?`);
+                window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+              }}
+              className="w-full bg-[#1DA1F2] hover:bg-[#1a8cd8] text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-colors mb-4"
+            >
+              Share Your Heist on X
+            </button>
+            <button onClick={() => setShowHeistVictory(false)} className="text-xs text-zinc-500 hover:text-white uppercase font-bold tracking-wider mt-2">
+              Return to Terminal
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
