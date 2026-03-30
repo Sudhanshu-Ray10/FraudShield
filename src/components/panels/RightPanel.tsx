@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { MOCK_PROFILES, MOCK_RECENT_TRANSACTIONS } from "@/lib/mockData";
 import { User, Activity, ShieldCheck, MapPin, Smartphone, CheckCircle, AlertTriangle, XCircle, Radar, Download } from "lucide-react";
+import { CyberGlobe, ArcData, RingData } from "@/components/ui/CyberGlobe";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -12,6 +13,17 @@ interface RightPanelProps {
   sender: string;
   sessionTxns?: Array<{ id: string, amount: number, location: string, status: string, date: string }>;
 }
+
+const LOCATIONS: Record<string, [number, number]> = {
+  "Pune": [18.5204, 73.8567],
+  "Mumbai": [19.0760, 72.8777],
+  "New York": [40.7128, -74.0060],
+  "London": [51.5074, -0.1278],
+  "Tokyo": [35.6762, 139.6503],
+  "San Francisco": [37.7749, -122.4194],
+  "Unknown/VPN": [35.0, -40.0] // Ocean
+};
+const SERVER_LOC = [37.7749, -122.4194]; // San Francisco Default HQ
 
 export function RightPanel({ sender, sessionTxns = [] }: RightPanelProps) {
   const isCompromised = ["john doe", "attacker", "hacker", "scammer"].includes(sender.toLowerCase().trim());
@@ -66,6 +78,49 @@ export function RightPanel({ sender, sessionTxns = [] }: RightPanelProps) {
     link.click();
     document.body.removeChild(link);
   };
+
+  const [arcs, setArcs] = useState<ArcData[]>([]);
+  const [rings, setRings] = useState<RingData[]>([]);
+
+  // Track new real-time attacks natively
+  useEffect(() => {
+     if (sessionTxns && sessionTxns.length > 0) {
+        const latestTxn = sessionTxns[0]; 
+        const loc = LOCATIONS[latestTxn.location] || [0, 0];
+        
+        // Define color based on actual simulation outcome
+        const color = latestTxn.status === "SAFE" ? "rgba(34, 197, 94, 0.8)" : 
+                      latestTxn.status === "FRAUD" ? "rgba(239, 68, 68, 0.9)" : 
+                      "rgba(245, 158, 11, 0.7)";
+        
+        const newArc = { startLat: loc[0], startLng: loc[1], endLat: SERVER_LOC[0], endLng: SERVER_LOC[1], color };
+        const newRing = { lat: loc[0], lng: loc[1], color };
+        
+        setArcs(prev => [...prev, newArc]);
+        setRings(prev => [...prev, newRing]);
+        
+        // Let the effect fade naturally by tearing down after 3 seconds
+        setTimeout(() => {
+           setArcs(prev => prev.filter(a => a !== newArc));
+           setRings(prev => prev.filter(r => r !== newRing));
+        }, 3000);
+     }
+  }, [sessionTxns]);
+
+  // Generate generic global background noise
+  useEffect(() => {
+    const bgInterval = setInterval(() => {
+       const keys = Object.keys(LOCATIONS);
+       const randomTarget = keys[Math.floor(Math.random() * keys.length)];
+       const loc = LOCATIONS[randomTarget] || [0, 0];
+       
+       const newArc = { startLat: loc[0], startLng: loc[1], endLat: SERVER_LOC[0], endLng: SERVER_LOC[1], color: "rgba(255, 255, 255, 0.05)" };
+       setArcs(prev => [...prev, newArc]);
+       
+       setTimeout(() => setArcs(prev => prev.filter(a => a !== newArc)), 2000);
+    }, 1800);
+    return () => clearInterval(bgInterval);
+  }, []);
   
   return (
     <div className="flex flex-col gap-6 h-full p-6 glass-card rounded-2xl overflow-y-auto">
@@ -123,17 +178,9 @@ export function RightPanel({ sender, sessionTxns = [] }: RightPanelProps) {
         </div>
       </div>
       
-      {/* Mini Geographic Radar */}
-      <div className="mt-2 p-4 rounded-xl border border-border/50 bg-black/40 relative overflow-hidden flex items-center justify-between">
-         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.1)_0,transparent_70%)] opacity-50 pointer-events-none" />
-         <div className="flex flex-col justify-center gap-1 relative z-10">
-            <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5"><Radar className="w-3.5 h-3.5 text-primary" /> Geo-Radar Active</h4>
-            <p className="text-[10px] text-zinc-500">Monitoring login anomalies</p>
-         </div>
-         <div className="w-10 h-10 border border-primary/20 rounded-full flex items-center justify-center relative">
-            <div className="absolute inset-0 border border-primary/40 rounded-full animate-ping opacity-20" style={{ animationDuration: '3s' }} />
-            <div className="w-1.5 h-1.5 bg-primary rounded-full shadow-[0_0_8px_2px_rgba(245,158,11,0.8)]" />
-         </div>
+      {/* Interactive 3D Cyber Globe WebGL Overlay */}
+      <div className="mt-2 w-full">
+         <CyberGlobe arcs={arcs} rings={rings} />
       </div>
 
       {/* Recent Activity */}
