@@ -245,10 +245,10 @@ export default function Home() {
       <Navbar gameMode={gameMode} setGameMode={setGameMode} bounty={bounty} />
 
       {/* 3-Panel Main Layout */}
-      <main className="flex-1 w-full max-w-[1800px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 pt-20 md:p-6 md:pt-24 lg:h-[calc(100vh-130px)]">
+      <main className="flex-1 w-full max-w-[1800px] mx-auto grid grid-cols-1 lg:grid-cols-12 items-start gap-4 md:gap-6 p-4 pt-24 md:pt-28 lg:h-[calc(100vh-120px)] overflow-y-auto lg:overflow-hidden pb-20 lg:pb-6">
 
         {/* Left Panel: Scenario Editor (3 columns) */}
-        <section className="col-span-1 md:col-span-2 lg:col-span-3 lg:h-[100%] max-h-full">
+        <section className="col-span-1 lg:col-span-3 h-fit lg:h-full">
           <LeftPanel
             scenario={scenario}
             setScenario={updateScenario}
@@ -262,7 +262,7 @@ export default function Home() {
         </section>
 
         {/* Center Panel: Simulation Engine (6 columns) */}
-        <section className="col-span-1 md:col-span-4 lg:col-span-6 relative z-10 lg:h-[100%] max-h-full">
+        <section className="col-span-1 lg:col-span-6 relative z-10 h-fit lg:h-full">
           <CenterPanel
             isSimulating={isSimulating}
             scenario={scenario}
@@ -272,7 +272,7 @@ export default function Home() {
         </section>
 
         {/* Right Panel: Context Details (3 columns) */}
-        <section className="col-span-1 md:col-span-2 lg:col-span-3 lg:h-[100%] max-h-full">
+        <section className="col-span-1 lg:col-span-3 h-fit lg:h-full">
           <RightPanel sender={scenario.sender} sessionTxns={sessionTxns[scenario.sender] || []} />
         </section>
 

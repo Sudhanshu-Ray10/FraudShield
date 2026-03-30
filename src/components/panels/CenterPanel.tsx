@@ -73,10 +73,10 @@ export function CenterPanel({ isSimulating, scenario, result, gameMode }: Center
       )}
 
       {(isSimulating || result) && (
-        <div className="flex flex-col gap-6 flex-1 min-h-[600px]">
+        <div className="flex flex-col gap-6 flex-1 min-h-[500px] lg:min-h-[600px]">
           
           {/* Main Hero: Score & Decision */}
-          <div className="grid grid-cols-2 gap-4 md:gap-6 shrink-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 shrink-0">
             <RiskMeter score={result?.score ?? 0} isSimulating={isSimulating} />
             <DecisionView result={result} isSimulating={isSimulating} />
           </div>
@@ -84,10 +84,10 @@ export function CenterPanel({ isSimulating, scenario, result, gameMode }: Center
           {/* Navigation Tabs */}
           <div className="flex items-center gap-1 md:gap-2 border-b border-border mt-2 shrink-0 overflow-x-auto pb-1 hide-scrollbar">
              {[
-               { id: "overview", label: "Deep Parse", icon: Zap },
-               { id: "radar", label: "Risk Radar", icon: RadarIcon },
-               { id: "geo", label: "Geo Anomaly", icon: MapPin },
-               { id: "graph", label: "Entity Graph", icon: Network },
+               { id: "overview", label: "Parse", icon: Zap },
+               { id: "radar", label: "Radar", icon: RadarIcon },
+               { id: "geo", label: "Geo", icon: MapPin },
+               { id: "graph", label: "Graph", icon: Network },
              ].map(t => (
                 <button
                   key={t.id}
@@ -107,11 +107,11 @@ export function CenterPanel({ isSimulating, scenario, result, gameMode }: Center
           </div>
 
           {/* Tab Content Area */}
-          <div className="flex-1 relative min-h-[300px]">
+          <div className="flex-1 relative min-h-[400px] md:min-h-[500px] overflow-hidden lg:overflow-visible">
              <AnimatePresence mode="wait">
                
                {activeTab === "overview" && (
-                 <motion.div key="overview" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="grid grid-cols-1 md:grid-cols-2 gap-8 absolute inset-0">
+                 <motion.div key="overview" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:absolute lg:inset-0">
                     <div className="flex flex-col">
                        <EvaluationSteps result={result} isSimulating={isSimulating} scenario={scenario} />
                        <div className="mt-8">
@@ -123,12 +123,12 @@ export function CenterPanel({ isSimulating, scenario, result, gameMode }: Center
                )}
 
                {activeTab === "radar" && (
-                 <motion.div key="radar" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex flex-col items-center justify-center w-full h-full absolute inset-0">
+                 <motion.div key="radar" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex flex-col items-center justify-center w-full h-[300px] md:h-full lg:absolute lg:inset-0">
                     {!isSimulating && result ? (
                        <ResponsiveContainer width="100%" height="100%">
                          <RadarChart cx="50%" cy="50%" outerRadius="70%" data={result.radarData}>
                            <PolarGrid stroke="#3f3f46" />
-                           <PolarAngleAxis dataKey="subject" tick={{ fill: '#a1a1aa', fontSize: 12 }} />
+                           <PolarAngleAxis dataKey="subject" tick={{ fill: '#a1a1aa', fontSize: 10 }} />
                            <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
                            <Radar name="Risk Attributes" dataKey="A" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.3} isAnimationActive={true} />
                          </RadarChart>
@@ -143,13 +143,13 @@ export function CenterPanel({ isSimulating, scenario, result, gameMode }: Center
                )}
 
                {activeTab === "geo" && (
-                 <motion.div key="geo" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="w-full h-full flex items-center justify-center absolute inset-0 bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden relative">
+                 <motion.div key="geo" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="w-full h-[300px] md:h-full flex items-center justify-center lg:absolute lg:inset-0 bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden relative">
                     <GeoAnomalyMap result={result} isSimulating={isSimulating} scenario={scenario} />
                  </motion.div>
                )}
 
                {activeTab === "graph" && (
-                 <motion.div key="graph" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="w-full h-full flex items-center justify-center absolute inset-0">
+                 <motion.div key="graph" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="w-full h-[300px] md:h-full flex items-center justify-center lg:absolute lg:inset-0">
                     <EntityRiskGraph result={result} isSimulating={isSimulating} scenario={scenario} />
                  </motion.div>
                )}

@@ -123,7 +123,7 @@ export function RightPanel({ sender, sessionTxns = [] }: RightPanelProps) {
   }, []);
   
   return (
-    <div className="flex flex-col gap-6 h-full p-6 glass-card rounded-2xl overflow-y-auto">
+    <div className="flex flex-col gap-6 h-full p-4 md:p-6 glass-card rounded-2xl overflow-y-auto">
       <div>
         <h2 className="text-xl font-bold flex items-center gap-2 text-white">
           <User className="w-5 h-5 text-primary" />

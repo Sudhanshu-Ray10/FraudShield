@@ -5,7 +5,15 @@ import dynamic from "next/dynamic";
 import { Radar } from "lucide-react";
 
 // Dynamically import react-globe.gl to prevent SSR issues with WebGL/window
-const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
+const Globe = dynamic(() => import("react-globe.gl"), { 
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-zinc-900/50">
+       <Radar className="w-8 h-8 text-primary animate-pulse" />
+       <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono">Loading Neural-INT Map...</span>
+    </div>
+  )
+});
 
 export interface ArcData {
   startLat: number;

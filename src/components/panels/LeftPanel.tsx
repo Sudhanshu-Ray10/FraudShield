@@ -39,7 +39,7 @@ export function LeftPanel({ scenario, setScenario, onSimulate, isSimulating, gam
   };
 
   return (
-    <div className="flex flex-col gap-6 h-full p-6 glass-card rounded-2xl overflow-y-auto">
+    <div className="flex flex-col gap-6 h-full p-4 md:p-6 glass-card rounded-2xl overflow-y-auto">
       <div>
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           {gameMode === "ATTACKER" ? "Attack Configuration" : "Scenario Config"}
